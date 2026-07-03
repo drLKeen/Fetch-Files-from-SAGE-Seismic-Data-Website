@@ -1,10 +1,10 @@
-# sageFetchFiles [![Open in MATLAB Online](https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg)](https://matlab.mathworks.com/open/github/v1?repo=drLKeen/sageFetchFiles&file=https://github.com/drLKeen/sageFetchFiles/blob/main/README.md)
-A workflow for automatically accessing data from the SAGE (formerly IRIS) seismic data website via their IRISWS interface. The FDSNWS interface provided by SAGE no longer offers a variety of file types and seems to be updated less often. All files available through FDSNWS are also available through IRISWS.
+# Fetch Files from SAGE Seismic Data Website [![Open in MATLAB Online](https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg)](https://matlab.mathworks.com/open/github/v1?repo=drLKeen/sageFetchFiles&file=https://github.com/drLKeen/sageFetchFiles/blob/main/README.md)
+A workflow for automatically accessing data from the SAGE (Seismological Facility for the Advancement of Geoscience, formerly IRIS) seismic data services via the IRISWS interface. The FDSNWS interface provided by SAGE no longer offers a variety of file types and seems to be updated less often. All files available through FDSNWS are also available through IRISWS.
 
 This workflow allows you to:
 * Specify IRISWS (timeseries) dataselect parameters in a single table.
 * Programmatically build a standards-compliant URL.
-* Retrieve and parse seismic traces (MiniSEED or SAC) directly into MATLAB.
+* Retrieve and parse seismic traces (MiniSEED or SAC) directly into MATLAB®.
   
 Examples on how to plot and process the data provided.
 
@@ -12,9 +12,9 @@ The code centers around the sageFetchObj.m object, which contains functions to c
 
 
 # Prerequisites
-* MATLAB (R2019b or newer)
+* MATLAB® (R2019b or newer)
 
-* At least one of the following MATLAB File Exchange parsers by François Beauducel must be installed on your MATLAB path:
+* At least one of the following third-party MATLAB File Exchange utilities by François Beauducel must be installed on your MATLAB path::
   * rdmseed (for MiniSEED)
   * rdsac (for SAC)
 
@@ -25,7 +25,7 @@ You can obtain the SAC and miniSEED parsers here:
 * rdmseed/mkmseed: https://www.mathworks.com/matlabcentral/fileexchange/28803-rdmseed-and-mkmseed-read-and-write-miniseed-files
 * rdsac/mksac: https://www.mathworks.com/matlabcentral/fileexchange/46356-rdsac-and-mksac-read-and-write-sac-seismic-data-file
 
-Note: These third-party functions are not bundled. Please install them separately to ensure sageFetch can decode the retrieved traces.
+Note: These third-party utilities are not included with this repository and must be installed separately.
 
 
 # General Troubleshooting
