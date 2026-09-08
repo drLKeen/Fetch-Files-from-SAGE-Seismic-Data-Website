@@ -27,14 +27,14 @@ classdef sageFetchObj
      VALID_QUALITIES   = {'D','R','Q','M','B'}; % list of Qualities accepted by Traces
      DEFAULT_QUALITY   = 'M'; % default Quality for Timeseries
      FETCHER_LIST      = {'Timeseries','Catalog','Resp'}; % list of functions that fetch
-     URL_BASE          = {'https://service.iris.edu/irisws/'};
+     URL_BASE          = 'https://service.earthscope.org/fdsnws/dataselect/1/';
    end %constant properties
 %% Methods
 methods(Static)
 
 %% Timeseries
 function S = Timeseries(network, station, location, channel, startDate, endDate, varargin)
-% SAGEFETCH.TIMESERIES Retrieve sac-equivalent waveform(s) with optional behaviors.
+% SAGEFETCH.TIMESERIES Retrieve MiniSEED waveform(s) with optional behaviors.
 %
 % Required inputs:
 %   network, station, location, channel, startDate, endDate (as strings or
@@ -43,8 +43,10 @@ function S = Timeseries(network, station, location, channel, startDate, endDate,
 % 
 % Optional name-value pairs:
 %   'correction' - char scalar. Default: 'none' (options: 'none','TotalSensitivity','InstrumentCorrection')
-%   'fileFormat' - char scalar. Default: 'mseed' (options: 'sac','mseed')
-%   'useAuth'    - logical scalar. Default: false
+%   'fileFormat' - char scalar. Default: 'miniseed' (option: 'miniseed')
+%   'useAuth'    - logical scalar. Default: false. 
+%   'saveFiles'  - logical scalar. Default: false. When true, retain the
+%                  downloaded waveform file locally
 
     import matlab.net.*
     import matlab.net.http.*
@@ -74,16 +76,20 @@ function S = Timeseries(network, station, location, channel, startDate, endDate,
     validCorrections = {'none','correction'}; % extend as needed
     checkCorrection = @(x) ischar(x) || isstring(x) && any(strcmpi(char(x), validCorrections));
 
-    defaultFileFormat = 'sac';
-    validFormats = {'sac','miniseed'};
-    checkFormat = @(x) ischar(x) || isstring(x) && any(strcmpi(char(x), validFormats));
+    defaultFileFormat = 'miniseed';
+    validFormats = {'miniseed'};
+    checkFormat = @(x) (ischar(x) || isstring(x)) && any(strcmpi(char(x), validFormats));
 
     defaultUseAuth = false;
     checkUseAuth = @(x) islogical(x) || (isnumeric(x) && isscalar(x));
 
+    defaultSaveFiles = false;
+    checkSaveFiles = @(x) islogical(x) && isscalar(x);
+
     addParameter(p,'correction', defaultCorrection, checkCorrection);
     addParameter(p,'fileFormat', defaultFileFormat, checkFormat);
     addParameter(p,'useAuth', defaultUseAuth, checkUseAuth);
+    addParameter(p,'saveFiles',defaultSaveFiles,checkSaveFiles);
 
     parse(p, network, station, location, channel, startDate, endDate, varargin{:});
     opts = p.Results;
@@ -123,8 +129,9 @@ function S = Timeseries(network, station, location, channel, startDate, endDate,
         fmt = lower(char(opts.fileFormat));
         switch fmt
             case 'sac'
+                error('sac formatted files are no longer available from FDSNWS. Please use miniSEED for now.')
                 % user explicitly requested sac format
-                opts.fileFormat = 'sac.zip';
+               % opts.fileFormat = 'sac.zip';
             case 'miniseed'
                 % user explicitly requested MiniSEED
                 opts.fileFormat = 'miniseed';
@@ -180,27 +187,33 @@ function S = Timeseries(network, station, location, channel, startDate, endDate,
     
 
     
-    baseURL = 'https://service.iris.edu/irisws/';
-    url = strcat(baseURL,'timeseries/1/',auth,net,sta,cha,startT,endT,scale,format1,loc,correct);
+    baseURL = 'https://service.earthscope.org/fdsnws/dataselect/1/';
+    url = strcat(baseURL,auth,net,sta,cha,startT,endT,scale,format1,loc,correct);
     disp(url)
 
     % Retrieve the data at the specified URL
     % You can use 'weboptions' to specify a file reader for webread,
     % thereby enabling the use of the webread function for custom file
-    % formats like sac and miniSEED.
+    % formats like miniSEED.
 
     if strcmp(ts.options.fileFormat, 'miniseed')
-       % Setting the file reader based on chosen file typ and 
+       % Setting the file reader based on chosen file type and 
        % increasing the amount of time allowed before timeout because
        % sometimes it can be slow to contact the SAGE server
-       opts = weboptions('ContentReader',@rdmseed,'Timeout',10);
-
        try
-        S = webread(url,opts);% rdmseed function is from File Exchange!!
+        downloadFile = [tempname '.mseed'];
+        websave(downloadFile, url, weboptions('Timeout',15));
+        cleanupDownload = onCleanup(@() delete(downloadFile)); %#ok<NASGU>
+        S = rdmseed(downloadFile);
+        if ts.options.saveFiles
+            outputBaseName = fullfile(pwd, sprintf('%s.%s.%s.%s', ...
+                ts.network, ts.station, ts.location, ts.channel));
+            mkmseed(outputBaseName, cat(1,S.d), cat(1,S.t), S, 'onefile');
+        end
        catch ME
            if strcmp(ME.identifier,'MATLAB:webservices:HTTP400StatusCodeError')
                % custom error explaination
-               msg = 'There are no files available that fit your selected parameters. Try using the sac.zip file format or changing the date range.';
+               msg = 'There are no files available that fit your selected parameters. Try changing the date range.';
                newME = MException('MATLAB:webservices:HTTP400StatusCodeError',msg);
                ME = addCause(ME, newME);
                rethrow(ME)
@@ -210,28 +223,32 @@ function S = Timeseries(network, station, location, channel, startDate, endDate,
        
        end
     
+       % THIS FUNCTIONALITY IS BEING CHANGED DUE TO SAGE's NEW DATA
+       % RETRIEVAL OPTIONS (LSK: 9/8/26)
     elseif strcmp(ts.options.fileFormat,'sac.zip')
+           msg = 'sac files are no longer available from this data service. Please use miniSEED for now.';
+           error(msg)
        % Setting the file reader based on chosen file typ and 
        % increasing the amount of time allowed before timeout because
        % sometimes it can be slow to contact the SAGE server
-       opts = weboptions('ContentReader',@rdsaczip,'Timeout',15);
-       try
-        [D,T0,S] = webread(url,opts);
-        S.D = D;
-        S.T0 = T0;
-
-       catch ME
-          if strcmp(ME.identifier,'MATLAB:webservices:HTTP400StatusCodeError')%| strcmp(ME.identifier,'MATLAB:nargoutchk:tooManyOutputs')% |trcmp(ME.identifier,'MATLAB:noSuchMethodOrField')
-               % custom error explanation
-               msg = 'There are no files available that fit your selected parameters. Try using the sac.zip file format or changing the date range.';
-               newME = MException('MATLAB:webservices:HTTP400StatusCodeError',msg);
-               ME = addCause(ME, newME);
-               rethrow(ME)
-          else
-               rethrow(ME)
-       
-          end
-       end
+       % opts = weboptions('ContentReader',@rdsaczip,'Timeout',15);
+       % try
+       %  [D,T0,S] = webread(url,opts);
+       %  S.D = D;
+       %  S.T0 = T0;
+       % 
+       % catch ME
+       %    if strcmp(ME.identifier,'MATLAB:webservices:HTTP400StatusCodeError')%| strcmp(ME.identifier,'MATLAB:nargoutchk:tooManyOutputs')% |trcmp(ME.identifier,'MATLAB:noSuchMethodOrField')
+       %         % custom error explanation
+       %         msg = 'There are no files available that fit your selected parameters. Try using the sac.zip file format or changing the date range.';
+       %         newME = MException('MATLAB:webservices:HTTP400StatusCodeError',msg);
+       %         ME = addCause(ME, newME);
+       %         rethrow(ME)
+       %    else
+       %         rethrow(ME)
+       % 
+       %    end
+       % end
     end
 end
 %% Catalog
@@ -263,8 +280,10 @@ end
 % not yet implemented.
 
 %% Helper Functions
-
-function varargout=rdsaczip(varargin)
+function varargout=rdsaczip(varargin) 
+    % THIS FUNCTION IS NO LONGER CALLED DUE TO SAC NO LONGER BEING
+    % AVAILABLE FROM THE SERVICE. WILL BE MODIFIED OR REMOVED IN THE FUTURE
+    % (LSK 9/8/26)
 %RDSACZIP Unzip and read SAC data file.
 % Edited by Laura S Keen, MathWorks, 3/3/26
 % This function is only a slight modification on the rdsac function
