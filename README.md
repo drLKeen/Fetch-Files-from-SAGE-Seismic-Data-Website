@@ -1,3 +1,5 @@
+# We are aware of the interruption of service from IRIS-WS and are working on a solution. Please see the fdsnws-switch-lsk branch for beta-testing of these solutions. 
+
 # Fetch Files from SAGE Seismic Data Website [![Open in MATLAB Online](https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg)](https://matlab.mathworks.com/open/github/v1?repo=drLKeen/sageFetchFiles&file=https://github.com/drLKeen/sageFetchFiles/blob/main/README.md)  [![View sageFetchFiles on File Exchange](https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)](https://www.mathworks.com/matlabcentral/fileexchange/184376-fetch-files-from-sage-seismic-data-website?s_tid=srchtitle)
 
 This repository simplifies access to those services from MATLAB®, enabling users to retrieve seismic waveform data in formats such as MiniSEED and SAC, import them directly into MATLAB, and integrate them into existing analysis workflows without manual URL construction or file handling.
