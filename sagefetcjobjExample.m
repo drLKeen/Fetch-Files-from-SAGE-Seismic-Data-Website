@@ -19,7 +19,7 @@ saveFiles = true; %[control:checkbox:1a16]{"position":[13,17]}
 starttime = "2025-07-29 22:00:00";
 endtime = "2025-07-30 04:00:00";
 
-fileformat = 'miniseed';
+fileformat = 'miniseed'; %[control:dropdown:0061]{"position":[14,24]}
 
 
 S = sageFetchObj.Timeseries(network,station,location,channel,starttime,endtime,'fileFormat',fileformat,'saveFiles',saveFiles);
@@ -119,5 +119,8 @@ signalAnalyzer
 %   data: {"defaultValue":"'BHZ'","label":"channel","run":"Section","valueType":"Char"}
 %---
 %[control:checkbox:1a16]
-%   data: {"defaultValue":false,"label":"saveFiles","run":"Section"}
+%   data: {"defaultValue":false,"label":"saveFiles","run":"Nothing"}
+%---
+%[control:dropdown:0061]
+%   data: {"defaultValue":"'sac'","itemLabels":["'sac'","'miniseed'"],"items":["'sac'","'miniseed'"],"label":"fileformat","run":"Section"}
 %---
